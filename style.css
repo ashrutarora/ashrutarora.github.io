@@ -170,29 +170,33 @@ a:hover { text-decoration-color: var(--ink); }
 .site nav a[aria-current] { color: var(--ink); }
 
 .theme {
-  display: grid;
-  place-items: center;
-  width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
   height: 2rem;
-  padding: 0;
+  padding: 0 .65rem;
+  font: inherit;
+  font-size: .8125rem;
   margin-left: .25rem;
   border: 1px solid var(--rule);
   background: none;
   cursor: pointer;
 }
 
-.theme svg { width: 15px; height: 15px; }
-.theme .moon { display: none; }
-:root[data-theme="dark"] .theme .sun { display: none; }
-:root[data-theme="dark"] .theme .moon { display: block; }
+.theme svg { width: 15px; height: 15px; flex: none; }
+.theme .moon, .theme .dark-label { display: none; }
+:root[data-theme="dark"] .theme .sun, :root[data-theme="dark"] .theme .light-label { display: none; }
+:root[data-theme="dark"] .theme .moon, :root[data-theme="dark"] .theme .dark-label { display: inline; }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme .sun { display: none; }
-  :root:not([data-theme="light"]) .theme .moon { display: block; }
+  :root:not([data-theme="light"]) .theme .sun, :root:not([data-theme="light"]) .theme .light-label { display: none; }
+  :root:not([data-theme="light"]) .theme .moon, :root:not([data-theme="light"]) .theme .dark-label { display: inline; }
 }
 
 @media (max-width: 520px) {
   .site nav a.ext { display: none; }
+  .theme { padding: 0; width: 2rem; justify-content: center; }
+  .theme .theme-label { display: none !important; }
   .byline .status { margin-left: 0; }
 }
 
@@ -537,9 +541,9 @@ main { position: relative; }
 
 /* footer */
 .foot {
-  max-width: var(--wide);
+  width: min(calc(100% - 2rem), calc(var(--wide) - 2rem));
   margin: 6rem auto 0;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.5rem 0 3rem;
   border-top: 1px solid var(--rule);
   display: flex;
   flex-wrap: wrap;
