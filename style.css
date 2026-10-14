@@ -815,3 +815,11 @@ mark {
 .fav img { width: 14px; height: 14px; display: block; }
 .res a { justify-content: flex-start; align-items: center; gap: .6rem; }
 .res a::after { margin-left: auto; margin-top: 0; }
+
+/* photo */
+.avatar { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: block; flex: none; background: var(--soft); }
+.portrait {
+  width: 6.5rem; height: 6.5rem; margin-bottom: 1.5rem; padding: 3px; border-radius: 50%;
+  background: conic-gradient(from 200deg, var(--r1), var(--r2), var(--r4), var(--r3), var(--r1));
+}
+.portrait img { width: 100%; height: 100%; border-radius: 50%; display: block; border: 3px solid var(--bg); background: var(--soft); }
