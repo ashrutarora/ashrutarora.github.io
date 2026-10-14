@@ -824,3 +824,30 @@ mark {
 }
 .portrait img { width: 100%; height: 100%; border-radius: 50%; display: block; border: 3px solid var(--bg); background: var(--soft); }
 .brand-photo { width: 1.75rem; height: 1.75rem; border-radius: 50%; display: block; flex: none; background: var(--soft); box-shadow: 0 0 0 1px var(--rule); }
+
+/* code blocks in articles */
+.prose pre {
+  font: .82rem/1.6 var(--mono);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin: 0 0 1.5rem;
+  overflow-x: auto;
+}
+.prose pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+
+/* one colour per step: Ricoh driver write-up */
+#print, #print ~ * { --c: var(--r1); --ct: var(--r1t); }
+#format, #format ~ * { --c: var(--r2); --ct: var(--r2t); }
+#scanner, #scanner ~ * { --c: var(--r3); --ct: var(--r3t); }
+#ship, #ship ~ * { --c: var(--r4); --ct: var(--r4t); }
+#testing, #testing ~ * { --c: initial; --ct: initial; }
+:is(#print, #format, #scanner, #ship)::before {
+  content: ""; display: inline-block; width: .55em; height: .55em; border-radius: 3px; background: var(--c); margin-right: .55em; vertical-align: .12em;
+}
+.toc li a[href="#print"] { --c: var(--r1); --ct: var(--r1t); }
+.toc li a[href="#format"] { --c: var(--r2); --ct: var(--r2t); }
+.toc li a[href="#scanner"] { --c: var(--r3); --ct: var(--r3t); }
+.toc li a[href="#ship"] { --c: var(--r4); --ct: var(--r4t); }
+.toc li a:is([href="#problem"], [href="#testing"], [href="#learned"]) { --c: initial; --ct: initial; }

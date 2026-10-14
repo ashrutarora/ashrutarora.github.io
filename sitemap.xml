@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://ashrutarora.github.io/</loc>
-    <lastmod>2026-10-14</lastmod>
+    <lastmod>2026-10-15</lastmod>
   </url>
   <url>
     <loc>https://ashrutarora.github.io/interview-experiences/</loc>
@@ -11,5 +11,9 @@
   <url>
     <loc>https://ashrutarora.github.io/interview-experiences/rystad-energy/</loc>
     <lastmod>2026-10-14</lastmod>
+  </url>
+  <url>
+    <loc>https://ashrutarora.github.io/projects/ricoh-sp210-macos/</loc>
+    <lastmod>2026-10-15</lastmod>
   </url>
 </urlset>

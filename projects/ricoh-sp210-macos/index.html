@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My printer had no Mac driver, so I wrote one: Ricoh SP 210 macOS driver</title>
+<meta name="description" content="How I reverse-engineered the Ricoh SP 210SU’s print format and scanner protocol with Ghidra, matched Ricoh’s Linux driver byte for byte, and shipped a macOS installer with scanning and iPhone printing.">
+<meta name="author" content="Ashrut Arora">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://ashrutarora.github.io/projects/ricoh-sp210-macos/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="My printer had no Mac driver, so I wrote one">
+<meta property="og:description" content="Reverse-engineering a Ricoh laser printer’s print format and scanner protocol, byte-identical to Ricoh’s own driver, shipped as a macOS installer.">
+<meta property="og:url" content="https://ashrutarora.github.io/projects/ricoh-sp210-macos/">
+<meta property="og:image" content="https://ashrutarora.github.io/og/home.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="Ashrut Arora">
+<meta property="article:published_time" content="2026-10-15">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="/style.css?v=8">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "My printer had no Mac driver, so I wrote one",
+  "description": "How I reverse-engineered the Ricoh SP 210SU’s print format and scanner protocol with Ghidra, matched Ricoh’s Linux driver byte for byte, and shipped a macOS installer with scanning and iPhone printing.",
+  "image": "https://ashrutarora.github.io/og/home.png",
+  "datePublished": "2026-10-15",
+  "dateModified": "2026-10-15",
+  "inLanguage": "en",
+  "mainEntityOfPage": "https://ashrutarora.github.io/projects/ricoh-sp210-macos/",
+  "keywords": ["Ricoh SP 210 macOS driver", "Ricoh SP 210SU Mac", "Ricoh SP 210 scanner Mac", "reverse engineering printer driver", "Ghidra", "CUPS filter", "AirScan eSCL"],
+  "about": { "@type": "SoftwareSourceCode", "name": "ricoh-sp210-macos", "codeRepository": "https://github.com/ashrutarora/ricoh-sp210-macos", "programmingLanguage": ["C", "Swift"] },
+  "author": {
+    "@type": "Person",
+    "name": "Ashrut Arora",
+    "url": "https://ashrutarora.github.io/",
+    "image": "https://ashrutarora.github.io/assets/img/ashrut-400.webp",
+    "sameAs": [
+      "https://www.linkedin.com/in/ashrutarora/",
+      "https://github.com/ashrutarora",
+      "https://medium.com/@ashrutarora"
+    ]
+  }
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"></div>
+
+<header class="site">
+  <div class="site-inner">
+    <a class="brand" href="/"><img class="brand-photo" src="/assets/img/ashrut-96.webp" width="28" height="28" alt="">Ashrut Arora</a>
+    <nav aria-label="Site">
+      <a href="/interview-experiences/">Interviews</a>
+      <a class="ext" href="https://www.linkedin.com/in/ashrutarora/">LinkedIn</a>
+      <a class="ext" href="https://github.com/ashrutarora">GitHub</a>
+      <button class="theme" type="button" aria-label="Switch between light and dark mode">
+        <span class="theme-label light-label">Light</span><span class="theme-label dark-label">Dark</span>
+        <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.5 5.5 0 0 1 6.4 2.5a5.5 5.5 0 1 0 7.1 7.1Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<article>
+<header class="post-head">
+  <nav class="crumbs rise" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>Projects</span></nav>
+  <h1 class="rise">My printer had no Mac driver, so I wrote one</h1>
+  <p class="dek rise d1">How I reverse-engineered a Ricoh laser printer’s print format and scanner protocol, matched Ricoh’s own driver byte for byte, and turned it into an installer anyone can use.</p>
+  <div class="byline rise d2">
+    <img class="avatar" src="/assets/img/ashrut-96.webp" srcset="/assets/img/ashrut-96.webp 96w, /assets/img/ashrut-192.webp 192w, /assets/img/ashrut-400.webp 400w" sizes="40px" width="40" height="40" alt="Ashrut Arora">
+    <div><strong>Ashrut Arora</strong><time datetime="2026-10-15">15 Oct 2026</time> · 6 min read</div>
+    <span class="status">Open source</span>
+  </div>
+</header>
+
+<section class="rounds rise d3" aria-label="The project at a glance">
+  <ol>
+    <li><a href="#print"><span class="n">Step 1</span><h2>Print at all</h2><p>Ricoh’s Linux filter in a Docker bridge</p></a></li>
+    <li><a href="#format"><span class="n">Step 2</span><h2>Read the format</h2><p>Ghidra · native C filter · byte-identical</p></a></li>
+    <li><a href="#scanner"><span class="n">Step 3</span><h2>The scanner</h2><p>Windows driver’s USB protocol · AirScan</p></a></li>
+    <li><a href="#ship"><span class="n">Step 4</span><h2>Ship it</h2><p>Installer · iPhone printing · tests</p></a></li>
+  </ol>
+</section>
+
+<div class="post-body">
+<nav class="toc" aria-label="Contents">
+  <p class="label">On this page</p>
+  <ol>
+    <li><a href="#problem">The problem</a></li>
+    <li><a href="#print">Print at all</a></li>
+    <li><a href="#format">Read the format</a></li>
+    <li><a href="#scanner">The scanner</a></li>
+    <li><a href="#ship">Ship it</a></li>
+    <li><a href="#testing">Testing</a></li>
+    <li><a href="#learned">What I took from it</a></li>
+  </ol>
+</nav>
+
+<div class="prose">
+<p class="lede" id="problem">I have a Ricoh SP 210SU: a small USB laser printer with a flatbed scanner on top. Ricoh makes drivers for Windows and Linux. For macOS, nothing. Plug it into a Mac and it shows up, macOS even offers a “Generic PCL” driver, and every job fails, because the printer does not speak PCL.</p>
+<p>So I made it work: printing from any app, scanning in Image Capture and Preview, and printing from my iPhone. The driver’s output is <mark>byte for byte the same as Ricoh’s own Linux driver</mark>. It is open source: <a href="https://github.com/ashrutarora/ricoh-sp210-macos">ricoh-sp210-macos</a>.</p>
+
+<h2 id="print">Step 1: make it print at all</h2>
+<p>Ricoh’s Linux driver is a CUPS filter called <code>rastertolilo</code>: a 32-bit x86 Linux program that turns a page into whatever the printer understands. A Mac can’t run that directly. A Docker container can.</p>
+<p>The first version was a bridge: a small Mac filter that posts the page to Ricoh’s filter running in a Linux container, and sends the result to the printer. It printed. It also needed Docker running, which no normal person wants for a printer. But it gave me something more useful than a working printer: <mark>a reference implementation I could feed any page and compare against</mark>.</p>
+
+<h2 id="format">Step 2: read the format</h2>
+<p>I opened <code>rastertolilo</code> in Ghidra. The binary was unstripped, so function names survived, which made it much easier. A print job turned out to be a simple stack of blocks, all big-endian:</p>
+<pre><code>GDIJ  job header      0x78 bytes
+GJET  job extension   0xa8 bytes
+per page:
+  GDIP  page header   0x40 bytes
+  GDIB  band          0x20-byte header + JBIG payload   (one per 256 rows)
+JIDG  end of job</code></pre>
+<p>Each page is cut into bands of 256 rows. Each band is dithered to 1 bit per pixel and compressed with JBIG1, an old fax-era compression standard. I wrote the whole format up in <a href="https://github.com/ashrutarora/ricoh-sp210-macos/blob/main/FORMAT.md">FORMAT.md</a>.</p>
+<p>Then I wrote a native filter in C that produces the same stream, using jbigkit for the JBIG1 part.</p>
+
+<h3>Byte-identical, not “looks the same”</h3>
+<p>“The page looks right” is a weak test. I wanted proof, so <code>tools/verify.sh</code> renders test pages, runs Ricoh’s filter in the container and my filter on the same input, and requires the outputs to be identical, byte for byte. Getting there meant finding three quirks:</p>
+<ol>
+  <li><strong>jbigkit trims zero bytes that Ricoh’s encoder keeps.</strong> The JBIG arithmetic coder writes some 0x00 bytes before its final flush; jbigkit drops them, Ricoh’s encoder doesn’t. I added a small patch (<code>JBG_KEEP_TRAILING_ZEROS</code>) to keep them.</li>
+  <li><strong>Floating-point rounding.</strong> Ricoh converts each grey level with <code>trunc((g / 255.0) * 255.0)</code> in old x87 arithmetic, which comes out one lower for 144 of the 256 levels. Matching that bit of history was necessary for identical output.</li>
+  <li><strong>The dither pattern’s phase in the last band.</strong> Each band’s pattern starts at <code>band * rows_in_this_band</code>, so the shorter last band of a page is offset.</li>
+</ol>
+<p>With those, all test cases match. Then I swapped Ricoh’s dither table for my own clustered-dot screen, so <mark>the shipped driver contains no Ricoh code at all</mark>. The printer doesn’t care which pattern you use; the byte-for-byte check still runs with Ricoh’s table, built from your own copy of their filter.</p>
+
+<h2 id="scanner">Step 3: the scanner</h2>
+<p>The scanner was harder: Ricoh’s Linux package doesn’t cover it, and the open-source SANE backend for older Ricoh models gets no reply from this one. The only driver that speaks its protocol is the Windows one, so I opened <code>RtScan64.dll</code> in Ghidra.</p>
+<p>The device has two USB interfaces: 0 is the printer, 1 is the scanner. The scanner takes commands as 4-byte numbers (status, wake, set parameters, start, finish, unlock) and a 32-byte parameter block with mode, resolution and area. After <code>start</code>, raw image rows come back over USB. The full protocol is in <a href="https://github.com/ashrutarora/ricoh-sp210-macos/blob/main/SCANNER.md">SCANNER.md</a>.</p>
+<p>Two things I only learned by testing on the real device:</p>
+<ul>
+  <li>Skip the “driver close” and “unlock” commands and the printer’s display stays stuck on “Scanning (USB)...” after the scan.</li>
+  <li>The tone curve the Windows driver sends seems to be ignored. White paper reads about 195 instead of 255, so the service stretches the levels itself.</li>
+</ul>
+<p>To make macOS see it as a real scanner, the service speaks Apple’s AirScan (eSCL) protocol on 127.0.0.1, so it works in Image Capture, Preview and System Settings like any network scanner.</p>
+
+<h3>The bug that took the longest</h3>
+<p>Image Capture kept getting stuck on “Waiting for scanner” with error -9921, but only sometimes. The macOS logs showed the real error: <code>EADDRNOTAVAIL</code>, “Can’t assign requested address”. The service was announced over Bonjour on every network interface. When the answer came back on Wi-Fi, macOS bound the connection to the Wi-Fi interface and then tried to reach 127.0.0.1 through it, which can’t work. Announcing on the local interface only (<code>dns-sd -lo</code>) fixed it, and a regression test now checks it stays that way.</p>
+
+<h2 id="ship">Step 4: make it usable by someone who isn’t me</h2>
+<p>A driver that needs a terminal is a driver for one person. So:</p>
+<ul>
+  <li><strong>An installer.</strong> A <code>.pkg</code> inside a disk image, with the steps drawn on the background. It isn’t signed or notarised (that needs a paid Apple developer account), so the disk image includes a link that opens System Settings exactly at the “Open Anyway” button.</li>
+  <li><strong>No Python, no Homebrew.</strong> I rewrote the scanner service in Swift on Apple’s own frameworks (IOUSBHost for USB, ImageIO for PNG, JPEG and PDF), as one universal binary for Apple Silicon and Intel.</li>
+  <li><strong>Printing from iPhone and iPad.</strong> macOS shares printers, but only announces real AirPrint printers to iOS. The service now announces the shared queue as AirPrint while sharing is on. One more surprise: iPhones send the user name “mobile”, which macOS refused until the queue allowed all users.</li>
+  <li><strong>An uninstaller</strong>, because software that can’t be removed cleanly shouldn’t be installed.</li>
+</ul>
+
+<h2 id="testing">Testing it like it matters</h2>
+<p>A printer driver reads whatever an app hands it, and a local web service is reachable by any web page in a browser. So the test suite includes malformed-input tests for the driver under AddressSanitizer, and checks that web pages can’t drive the scanner service and that it refuses ambiguous HTTP requests.</p>
+
+<h2 id="learned">What I took from it</h2>
+<ul>
+  <li><strong>Get a reference you can diff against before you write anything.</strong> The Docker bridge made “is my output correct?” a yes/no question instead of a feeling.</li>
+  <li><strong>Exact means exact.</strong> Two of the three quirks were rounding and phase details I would never have guessed; only the byte comparison found them.</li>
+  <li><strong>The last 20% is the product.</strong> Printing worked early. The installer, the Bonjour bug, iPhone printing and the tests are what turned it into something other people can use.</li>
+</ul>
+
+<div class="outro">
+  <p>Have a Ricoh SP 210 series printer and a Mac? The installer is on GitHub.</p>
+  <a class="button" href="https://github.com/ashrutarora/ricoh-sp210-macos/releases/latest">Download the latest release <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+</div>
+</div>
+</div>
+</article>
+</main>
+
+
+<footer class="foot">
+  <p>© Ashrut Arora</p>
+  <p class="foot-links"><a href="https://www.linkedin.com/in/ashrutarora/" aria-label="LinkedIn"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="currentColor"/></svg></a><a href="https://github.com/ashrutarora" aria-label="GitHub"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/></svg></a></p>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  document.querySelector('.theme')?.addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('theme', root.dataset.theme); } catch (e) {}
+  });
+  const bar = document.querySelector('.progress');
+  const site = document.querySelector('.site');
+  const links = [...document.querySelectorAll('.toc a')];
+  const sections = links.map(a => document.getElementById(a.hash.slice(1)));
+  const onScroll = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
+    site.classList.toggle('scrolled', scrollY > 8);
+    let current = -1;
+    sections.forEach((el, i) => { if (el.getBoundingClientRect().top < innerHeight * 0.45) current = i; });
+    links.forEach((a, i) => a.classList.toggle('active', i === current));
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  onScroll();
+})();
+</script>
+</body>
+</html>
